@@ -70,6 +70,7 @@ backend:
       ep-size: 8
       enable-dp-attention: true
       moe-a2a-backend: "deepep"
+      deepep-mode: low_latency
       moe-runner-backend: "flashinfer_mxfp4"
       chunked-prefill-size: 4096
       disable-flashinfer-autotune: true
@@ -90,6 +91,7 @@ backend:
       ep-size: 16
       enable-dp-attention: true
       moe-a2a-backend: "deepep"
+      deepep-mode: low_latency
       moe-runner-backend: "flashinfer_mxfp4"
       chunked-prefill-size: 4096
       disable-flashinfer-autotune: true
