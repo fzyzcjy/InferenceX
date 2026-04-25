@@ -1821,6 +1821,21 @@
   pr-link: https://github.com/SemiAnalysisAI/InferenceX/pull/1132
 
 - config-keys:
+    - dsv4-fp8-mi355x-sglang
+  description:
+    - "Drop --mem-fraction-static 0.88 and --max-total-tokens from dsv4_fp8_mi355x.sh"
+    - "Bump --chunked-prefill-size from 4096 to 8192"
+    - "Retrigger dsv4-fp8-mi355x-sglang"
+
+- config-keys:
+    - dsv4-fp8-mi355x-sglang
+  description:
+    - "Drop --mem-fraction-static 0.88 and --max-total-tokens from dsv4_fp8_mi355x.sh"
+    - "Bump --chunked-prefill-size from 4096 to 8192"
+    - "Retrigger dsv4-fp8-mi355x-sglang"
+  pr-link: https://github.com/SemiAnalysisAI/InferenceX/pull/1159
+
+- config-keys:
     - dsv4-fp4-gb200-dynamo-sglang
   description:
     - "Add DeepSeek-V4-Pro FP4 GB200 disaggregated SGLang benchmarks via Dynamo (1k/1k sweep; 8k/1k recipes shipped but commented out)"
