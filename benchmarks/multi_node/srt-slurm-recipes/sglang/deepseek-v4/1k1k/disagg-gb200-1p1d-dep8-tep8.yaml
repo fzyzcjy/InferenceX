@@ -10,9 +10,21 @@ name: "dsv4-sglang-disagg-gb200-1p1d-dep8-tep8"
 # Topology mirrors the dsv4-fp4-gb200-dynamo-vllm sibling so cross-
 # framework numbers stay directly comparable.
 #
-# Topology: 1 prefill (DP=8 EP=8) + 1 decode (TP=8, no DP-attn). 4 nodes.
-# Targets very low concurrency (1-64) where TP-sharded decode gives the
-# best per-user latency.
+# Topology: 1 prefill (TP=8) + 1 decode (TP=8). 4 nodes. Targets very
+# low concurrency (1-64).
+#
+# Why TP-only (no DeepEP, no DP-attention, no EP): the
+# lmsysorg/sglang:deepseek-v4-grace-blackwell image's sglang fork ships
+# a fork-only quant kernel `mxfp4_deepseek.py` (does not exist in
+# upstream sgl-project/sglang) that reads `dispatch_output.topk_output`
+# at line 347. Neither `DeepEPNormalDispatchOutput` nor
+# `DeepEPLLDispatchOutput` exposes that field in this fork, so any
+# `forward_deepep` path in disagg crashes the prefill scheduler. PR #75
+# (the only upstream DSV4 sglang disagg recipe) takes the same TP-only
+# stance — defaults to `moe_a2a_backend="none"` (sglang server_args.py)
+# and lets TP shard the expert weights instead of sharding via EP.
+# We can re-introduce EP/DeepEP once the fork's mxfp4_deepseek dispatch
+# API mismatch is fixed.
 
 model:
   path: "deepseek-v4-pro"
@@ -82,11 +94,6 @@ backend:
       served-model-name: "deepseek-ai/DeepSeek-V4-Pro"
       trust-remote-code: true
       tensor-parallel-size: 8
-      dp-size: 8
-      ep-size: 8
-      enable-dp-attention: true
-      moe-a2a-backend: "deepep"
-      deepep-mode: low_latency
       moe-runner-backend: "flashinfer_mxfp4"
       chunked-prefill-size: 4096
       disable-flashinfer-autotune: true
