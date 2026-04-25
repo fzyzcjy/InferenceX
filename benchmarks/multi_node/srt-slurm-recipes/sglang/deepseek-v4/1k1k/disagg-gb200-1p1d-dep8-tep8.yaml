@@ -19,8 +19,13 @@ model:
   container: "lmsysorg/sglang:deepseek-v4-grace-blackwell"
   precision: "fp4"
 
-dynamo:
-  version: 0.8.1
+# No `dynamo:` block — srtctl skips the dynamo pip install and uses the
+# dynamo build baked into the lmsysorg/sglang:deepseek-v4-grace-blackwell
+# image. dynamo 0.8.1 (the version pinned by upstream DSR1 sglang
+# recipes) imports `sgl.Engine`, which this image's sglang fork does not
+# expose, so re-installing it breaks startup with `AttributeError:
+# module 'sglang' has no attribute 'Engine'`. PR #75 (the only upstream
+# DSV4 sglang disagg recipe) follows the same pattern.
 
 slurm:
   time_limit: "8:00:00"
