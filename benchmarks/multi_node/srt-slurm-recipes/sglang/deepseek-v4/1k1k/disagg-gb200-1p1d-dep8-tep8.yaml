@@ -45,7 +45,6 @@ frontend:
 
 backend:
   type: sglang
-  connector: null
 
   # Env var set mirrored from PR #69 (the GB200 DSV4 aggregated baseline
   # that's actually been run upstream) plus the disaggregation timeout

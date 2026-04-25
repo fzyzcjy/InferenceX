@@ -40,7 +40,6 @@ frontend:
 
 backend:
   type: sglang
-  connector: null
 
   prefill_environment:
     PYTHONUNBUFFERED: "1"
