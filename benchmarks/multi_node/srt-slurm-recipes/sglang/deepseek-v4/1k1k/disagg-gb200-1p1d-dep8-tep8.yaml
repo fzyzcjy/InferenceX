@@ -10,21 +10,32 @@ name: "dsv4-sglang-disagg-gb200-1p1d-dep8-tep8"
 # Topology mirrors the dsv4-fp4-gb200-dynamo-vllm sibling so cross-
 # framework numbers stay directly comparable.
 #
-# Topology: 1 prefill (TP=8) + 1 decode (TP=8). 4 nodes. Targets very
-# low concurrency (1-64).
+# Topology: 1 prefill (TP=8 / DP=8) + 1 decode (TP=8 / DP=8). 4 nodes.
+# Targets very low concurrency (1-64).
 #
-# Why TP-only (no DeepEP, no DP-attention, no EP): the
-# lmsysorg/sglang:deepseek-v4-grace-blackwell image's sglang fork ships
-# a fork-only quant kernel `mxfp4_deepseek.py` (does not exist in
-# upstream sgl-project/sglang) that reads `dispatch_output.topk_output`
-# at line 347. Neither `DeepEPNormalDispatchOutput` nor
-# `DeepEPLLDispatchOutput` exposes that field in this fork, so any
-# `forward_deepep` path in disagg crashes the prefill scheduler. PR #75
-# (the only upstream DSV4 sglang disagg recipe) takes the same TP-only
-# stance — defaults to `moe_a2a_backend="none"` (sglang server_args.py)
-# and lets TP shard the expert weights instead of sharding via EP.
-# We can re-introduce EP/DeepEP once the fork's mxfp4_deepseek dispatch
-# API mismatch is fixed.
+# Why TP=8 + DP-attention but NO `moe-a2a-backend` (default "none"):
+#   1. DSV4-Pro at MXFP4 is too large for TP=4 single-node — OOM.
+#      TP=8 across 2 GB200 nodes (8 GPUs * 96 GB = 768 GB) fits.
+#   2. The lmsysorg/sglang:deepseek-v4-grace-blackwell sglang fork
+#      ships a fork-only quant kernel `mxfp4_deepseek.py` that reads
+#      `dispatch_output.topk_output`. Neither `DeepEPLLDispatchOutput`
+#      nor `DeepEPNormalDispatchOutput` exposes that field in this
+#      fork, so `forward_deepep` always crashes the prefill scheduler.
+#      We must stay off the DeepEP path.
+#   3. At TP=8 the shared-experts gate_up_proj fails FP8 block-quant
+#      divisibility (1536/8=192, not divisible by block_n=128).
+#      `moe-dense-tp-size: 1` runs the dense MLP layers replicated
+#      (TP=1) so the divisibility check passes — but that flag is
+#      gated on `enable_dp_attention=True` in sglang
+#      `python/sglang/srt/layers/dp_attention.py`
+#      (`compute_dp_attention_local_info` returns the full `tp_size`
+#      and ignores `moe_dense_tp_size` when DP-attn is off).
+# So: `enable-dp-attention: true` + `dp-size: 8` (DP-attn active so
+# `moe-dense-tp-size: 1` takes effect) AND no `moe-a2a-backend` set.
+# The default `"none"` lands the MoE on `forward_normal` instead of
+# `forward_deepep` — verified in deepseek_v2.py:
+#   `_enable_a2a_moe = is_deepep|is_mooncake|is_nixl|is_mori|
+#    is_ascend_fuseep|is_flashinfer`  → False with default.
 
 model:
   path: "deepseek-v4-pro"
@@ -54,12 +65,12 @@ health_check:
 resources:
   gpu_type: "gb200"
   gpus_per_node: 4
-  prefill_nodes: 1
-  decode_nodes: 1
+  prefill_nodes: 2
+  decode_nodes: 2
   prefill_workers: 1
   decode_workers: 1
-  gpus_per_prefill: 4
-  gpus_per_decode: 4
+  gpus_per_prefill: 8
+  gpus_per_decode: 8
 
 frontend:
   type: dynamo
@@ -95,7 +106,10 @@ backend:
     prefill:
       served-model-name: "deepseek-ai/DeepSeek-V4-Pro"
       trust-remote-code: true
-      tensor-parallel-size: 4
+      tensor-parallel-size: 8
+      moe-dense-tp-size: 1
+      enable-dp-attention: true
+      dp-size: 8
       moe-runner-backend: "flashinfer_mxfp4"
       chunked-prefill-size: 4096
       disable-flashinfer-autotune: true
@@ -111,7 +125,10 @@ backend:
     decode:
       served-model-name: "deepseek-ai/DeepSeek-V4-Pro"
       trust-remote-code: true
-      tensor-parallel-size: 4
+      tensor-parallel-size: 8
+      moe-dense-tp-size: 1
+      enable-dp-attention: true
+      dp-size: 8
       moe-runner-backend: "flashinfer_mxfp4"
       chunked-prefill-size: 4096
       disable-flashinfer-autotune: true
