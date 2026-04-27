@@ -1,29 +1,22 @@
 name: "dsv4-sglang-disagg-gb200-3p1d-dep8-dep16"
 
-# High-concurrency 4096/8192 topology — flashinfer EP smoke test.
+# High-concurrency 4096/8192 topology. Same TP=8 + DP-attn + no-EP
+# shape as the 1p1d siblings — see ./disagg-gb200-1p1d-dep8-tep8.yaml
+# header for the full constraint chain.
 #
-# DeepEP is dead on this image (mxfp4_deepseek.py:347 reads
-# dispatch_output.topk_output, neither DeepEPNormal nor DeepEPLL output
-# class exposes that field — see ./disagg-gb200-1p1d-dep8-tep8.yaml
-# header). This recipe tries `moe-a2a-backend: flashinfer` instead —
-# upstream sglang docs (docs/advanced_features/expert_parallelism.md)
-# call out flashinfer as the option for "Large-scale EP deployments",
-# and its dispatcher returns a different output class than DeepEP, so
-# the mxfp4_deepseek apply path may or may not trip the same bug.
+# Both EP backends available upstream (deepep, flashinfer) are dead on
+# this image:
+#   * deepep — mxfp4_deepseek.py:347 reads dispatch_output.topk_output;
+#     neither DeepEPNormalDispatchOutput nor DeepEPLLDispatchOutput
+#     exposes that field in this fork.
+#   * flashinfer — `_handle_a2a_moe` in server_args.py asserts
+#     "Flashinfer MoE A2A is only supported with flashinfer_cutlass
+#     moe runner backend", and flashinfer_cutlass is FP8-only — won't
+#     load DSV4-Pro's MXFP4 weights.
+# Adds prefill capacity (3 workers vs 1) for the high-conc tail —
+# single prefill saturates around conc 4096 at 1k prompts.
 #
-# Per sglang server_args.py `_handle_a2a_moe`, flashinfer auto-sets
-# SGLANG_MOE_NVFP4_DISPATCH=True and forces ep_size = tp_size, so we
-# set ep-size: 8 explicitly. Keeps everything else (TP=8 / DP=8 /
-# moe-dense-tp-size: 1) so the FP8 block-quant path remains valid.
-#
-# Goal here is binary: does the EP path serve any real prefill batch
-# on this image, or does it crash the same way DeepEP did. If it
-# serves, copy this pattern back to the 1p1d siblings; if it crashes,
-# revert to the no-EP forward_normal path and accept the TP-only
-# pareto.
-#
-# Topology: 3 prefill (TP=8 / DP=8 / EP=8) + 1 decode (TP=8 / DP=8 /
-# EP=8). 8 nodes.
+# Topology: 3 prefill (TP=8 / DP=8) + 1 decode (TP=8 / DP=8). 8 nodes.
 
 model:
   path: "deepseek-v4-pro"
@@ -87,8 +80,6 @@ backend:
       moe-dense-tp-size: 1
       enable-dp-attention: true
       dp-size: 8
-      ep-size: 8
-      moe-a2a-backend: "flashinfer"
       moe-runner-backend: "flashinfer_mxfp4"
       chunked-prefill-size: 4096
       disable-flashinfer-autotune: true
@@ -108,8 +99,6 @@ backend:
       moe-dense-tp-size: 1
       enable-dp-attention: true
       dp-size: 8
-      ep-size: 8
-      moe-a2a-backend: "flashinfer"
       moe-runner-backend: "flashinfer_mxfp4"
       chunked-prefill-size: 4096
       disable-flashinfer-autotune: true
