@@ -76,7 +76,7 @@ backend:
       disable-radix-cache: true
       mem-fraction-static: 0.82
       context-length: 9280
-      max-running-requests: 4
+      max-running-requests: 8
       stream-interval: 50
       decode-log-interval: 1000
       disaggregation-mode: "prefill"
