@@ -115,7 +115,7 @@ async def async_request_tgi(
             output.error = "".join(traceback.format_exception(*exc_info))
 
         if pbar:
-            pbar.update(1)
+            _err = (output.error or '').replace(chr(10), ' | ').strip(); print(f"[{time.strftime('%H:%M:%S')}] ok={output.success} lat={getattr(output,'latency',0):.2f}s url={request_func_input.api_url} plen={request_func_input.prompt_len} err={_err}", flush=True); pbar.update(1)
         return output
 
 
@@ -183,7 +183,7 @@ async def async_request_trt_llm(
             output.error = "".join(traceback.format_exception(*exc_info))
 
         if pbar:
-            pbar.update(1)
+            _err = (output.error or '').replace(chr(10), ' | ').strip(); print(f"[{time.strftime('%H:%M:%S')}] ok={output.success} lat={getattr(output,'latency',0):.2f}s url={request_func_input.api_url} plen={request_func_input.prompt_len} err={_err}", flush=True); pbar.update(1)
         return output
 
 
@@ -227,7 +227,7 @@ async def async_request_deepspeed_mii(
             output.error = "".join(traceback.format_exception(*exc_info))
 
         if pbar:
-            pbar.update(1)
+            _err = (output.error or '').replace(chr(10), ' | ').strip(); print(f"[{time.strftime('%H:%M:%S')}] ok={output.success} lat={getattr(output,'latency',0):.2f}s url={request_func_input.api_url} plen={request_func_input.prompt_len} err={_err}", flush=True); pbar.update(1)
         return output
 
 
@@ -326,7 +326,7 @@ async def async_request_openai_completions(
             output.error = "".join(traceback.format_exception(*exc_info))
 
     if pbar:
-        pbar.update(1)
+        _err = (output.error or '').replace(chr(10), ' | ').strip(); print(f"[{time.strftime('%H:%M:%S')}] ok={output.success} lat={getattr(output,'latency',0):.2f}s url={request_func_input.api_url} plen={request_func_input.prompt_len} err={_err}", flush=True); pbar.update(1)
     return output
 
 
@@ -422,7 +422,7 @@ async def async_request_openai_chat_completions(
             output.error = "".join(traceback.format_exception(*exc_info))
 
     if pbar:
-        pbar.update(1)
+        _err = (output.error or '').replace(chr(10), ' | ').strip(); print(f"[{time.strftime('%H:%M:%S')}] ok={output.success} lat={getattr(output,'latency',0):.2f}s url={request_func_input.api_url} plen={request_func_input.prompt_len} err={_err}", flush=True); pbar.update(1)
     return output
 
 
