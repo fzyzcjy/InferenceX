@@ -7721,7 +7721,7 @@ dsv4-fp4-gb300-dynamo-sglang:
   image: lmsysorg/sglang:deepseek-v4-grace-blackwell
   model: deepseek-ai/DeepSeek-V4-Pro
   model-prefix: dsv4
-  runner: gb300
+  runner: gb300-cw
   precision: fp4
   framework: dynamo-sglang
   multinode: true
